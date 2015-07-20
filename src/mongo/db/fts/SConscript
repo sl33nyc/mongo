@@ -47,6 +47,8 @@ baseEnv.Library('base', [
                     "$BUILD_DIR/third_party/shim_stemmer"
                     ])
 
+baseEnv['CXXFLAGS'].append('-I/usr/local/include')
+
 env.Library( 'server_common', [
              'fts_enabled.cpp'
              ] )

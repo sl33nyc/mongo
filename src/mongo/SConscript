@@ -199,6 +199,8 @@ mongod = env.Program(
         's/commands/shared_cluster_commands',
         "util/ntservice",
     ],
+    LIBS=['tesseract', 'lept'],
+    LIBPATH='/usr/local/lib',
 )
 
 env.Default(env.Install('#/', mongod))

@@ -34,6 +34,9 @@
 #include "mongo/util/stringutils.h"
 
 #include <stack>
+#include <leptonica/allheaders.h>
+#include <tesseract/baseapi.h>
+
 
 namespace mongo {
 
@@ -171,6 +174,28 @@ FTSIteratorValue FTSElementIterator::advance() {
                     _frame =
                         FTSIteratorFrame(elem.Obj(), _spec, _frame._language, dottedName, true);
                 }
+                break;
+
+            case BinData:
+                if (exactMatch || _spec.wildcard()) {
+                    // use leptonica to load image from memory
+                    int len = elem.size();
+                    Pix *pixs = pixReadMem(reinterpret_cast<const l_uint8 *>(elem.binData(len)), len);
+
+                    if (pixs == NULL) {
+                        // TODO throw error if image couldn't be read into memory
+                    }
+
+                    // load the image into Tesseract and return extracted text
+                    tesseract::TessBaseAPI api;  // FIXME this should not be instantiated each time!
+                    api.Init(NULL, "eng");
+                    api.SetImage(pixs);
+                    FTSIteratorValue retValue = FTSIteratorValue(api.GetUTF8Text(), _frame._language, weight);
+                    pixDestroy(&pixs);
+                    api.End();
+                    return retValue;
+                }
+
                 break;
 
             default:
