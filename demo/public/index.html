@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OCR Index</title>
+        <link href="/static/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+        <style type="text/css">
+            img {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="jumbotron">
+            <div class="container-fluid">
+                <h1>OCR Index Demo</h1>
+            </div>
+        </div>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-4">
+                    <code>> db.asdf.find({}).sort({$natural: -1}).limit(1);</code>
+                    <div id="all"></div>
+                </div>
+                <div class="col-md-4">
+                    <code>> db.asdf.find({$text: {$search: "duck"}}});</code>
+                    <div id="duckResults"></div>
+                </div>
+                <div class="col-md-4">
+                    <code>> db.asdf.find({$text: {$search: "cow"}}});</code>
+                    <div id="cowResults"></div>
+                </div>
+            </div>
+        </div>
+        <script src="/static/js/jquery.min.js"></script>
+        <script src="/static/js/bootstrap.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var io = io.connect();
+            var since = {
+                'duck': new Date().getTime(),
+                'cow': new Date().getTime()
+            };
+
+            function addImage(selector, oid) {
+                $(selector).append('<div class="resized"><img src="/img?id=' + oid + '"/></div>');
+                $(selector + ' img').fadeIn();
+            }
+
+            io.on('new image', function(data) {
+                $('#all img').fadeOut();
+                $('#all').empty();
+                addImage('#all', data._id);
+            });
+
+            function pollSearch(animal) {
+                setInterval(function() {
+                    $.get('/search?q=' + animal + '&s=' + since[animal] + '&e=' + new Date().getTime(),
+                        function(data) {
+                            since[animal] = parseInt(data.thru);
+                            data.results.forEach(function(oid) {
+                                addImage('#' + animal + 'Results', oid);
+                            });
+                        },
+                        'json');
+                }, 1000);
+            }
+
+            pollSearch('duck');
+            pollSearch('cow');
+        </script>
+    </body>
+</html>
